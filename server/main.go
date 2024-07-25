@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"net/http"
+	"server/controllers"
 	"server/database"
 
 	"github.com/gin-gonic/gin"
@@ -25,10 +26,16 @@ var albums = []album{
 	{ID: "3", Title: "Sarah Vaughan and Clifford Brown", Artist: "Sarah Vaughan", Price: 39.99},
 }
 
+func init() {
+	fmt.Println("This will get called on main initialization")
+	database.ConnectDatabase()
+	database.SyncDatabase()
+}
+
 func main() {
 
 	router := gin.Default()
-	database.ConnectDatabase()
+	router.POST("/singup", controllers.Singup)
 	router.GET("/albums", getAlbums)
 	router.GET("/users", getUsers)
 	router.POST("/albums", postAlbums)
@@ -44,15 +51,15 @@ func getUsers(c *gin.Context) {
 	// if err != nil {
 	// 	log.Fatal(err)
 	// }
-	age := 21
-	rows, err := database.Db.Query("SELECT name FROM users WHERE age = $1", age)
-	if err != nil {
-		fmt.Println(err)
-		c.AbortWithStatusJSON(400, "Couldn't create the new user.")
-	} else {
-		c.IndentedJSON(http.StatusOK, rows)
-		// ctx.JSON(http.StatusOK, "User is successfully created.")
-	}
+	// age := 21
+	// rows, err := database.Db.Query("SELECT name FROM users WHERE age = $1", age)
+	// if err != nil {
+	// 	fmt.Println(err)
+	// 	c.AbortWithStatusJSON(400, "Couldn't create the new user.")
+	// } else {
+	// 	c.IndentedJSON(http.StatusOK, rows)
+	// 	// ctx.JSON(http.StatusOK, "User is successfully created.")
+	// }
 }
 
 // getAlbums responds with the list of all albums as JSON.
