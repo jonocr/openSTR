@@ -3,29 +3,32 @@ package controllers
 import (
 	"fmt"
 	"net/http"
+	"os"
 	"server/database"
 	"server/models"
+	"server/utils"
 
 	"github.com/gin-gonic/gin"
 	"golang.org/x/crypto/bcrypt"
 )
 
-func Singup(c *gin.Context) {
-	var body struct {
-		Email    string `json:"email"`
-		Password string `json:"password"`
-		Name     string `json:"name"`
-		LastName string `json:"lastname"`
-	}
+var user struct {
+	Email    string `json:"email"`
+	Password string `json:"password"`
+	Name     string `json:"name"`
+	LastName string `json:"lastname"`
+}
 
-	if c.BindJSON(&body) != nil {
+func Singup(c *gin.Context) {
+
+	if c.BindJSON(&user) != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"error": "Fail to read body",
 		})
 		return
 	}
 
-	hash, err := bcrypt.GenerateFromPassword([]byte(body.Password), 10)
+	hash, err := bcrypt.GenerateFromPassword([]byte(user.Password), 10)
 
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
@@ -34,13 +37,12 @@ func Singup(c *gin.Context) {
 
 		return
 	}
-	fmt.Printf("Params gin %+v \n", c.Request.Body)
-	fmt.Printf("body struct %+v \n", body)
-	fmt.Printf("body values %v \n", body)
-	fmt.Printf("body email %v \n", body.Email)
-	user := models.User{Email: body.Email, Password: string(hash), Name: body.Name, LastName: body.LastName}
+	fmt.Printf("body struct %+v \n", user)
+	user := models.User{Email: user.Email, Password: string(hash), Name: user.Name, LastName: user.LastName, IsVerified: false}
 
 	result := database.DB.Create(&user)
+
+	fmt.Printf("user created %+v \n", user)
 
 	if result.Error != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
@@ -49,5 +51,23 @@ func Singup(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{})
+	c.JSON(http.StatusOK, gin.H{
+		"message": "Please check your email and verify your account.",
+	})
+}
+
+func Singin(c *gin.Context) {
+
+}
+
+func SendVerificationEmail() error {
+
+	emails := []string{os.Getenv("FROM_EMAIL")}
+	msg := "3nd email confirmation test"
+	subject := "Golang Verification Email from Dev"
+
+	message := "Subject: " + subject + "\n" + msg
+
+	return utils.SendMail(emails, message)
+
 }

@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"net/http"
 	"server/controllers"
 	"server/database"
@@ -39,8 +40,26 @@ func main() {
 	router.GET("/albums", getAlbums)
 	router.GET("/users", getUsers)
 	router.POST("/albums", postAlbums)
+	router.GET("/email", sendEmail)
 
 	router.Run("localhost:8080")
+}
+
+func sendEmail(c *gin.Context) {
+
+	err := controllers.SendVerificationEmail()
+
+	if err != nil {
+		log.Println(err.Error())
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "Failed to send verification email.",
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message": "Email sent",
+	})
 }
 
 // getAlbums responds with the list of all albums as JSON.
