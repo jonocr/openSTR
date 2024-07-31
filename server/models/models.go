@@ -16,7 +16,8 @@ type User struct {
 
 type UserToken struct {
 	gorm.Model
-	Id     uint   `gorm:"primaryKey"`
-	UserId string `gorm:"unique"`
+	Id     uint `gorm:"primaryKey"`
+	UserId uint
+	User   User `gorm:"foreignKey:UserId;references:Id"`
 	Token  string
 }
