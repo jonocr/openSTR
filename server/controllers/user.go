@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"log"
 	"net/http"
 	"server/database"
 	"server/models"
@@ -70,6 +71,14 @@ func Singup(c *gin.Context) {
 		return
 	}
 
+	if err := SendVerificationEmail(user.Email, user.Name, token); err != nil {
+		log.Println(err.Error())
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "Failed to send email verification",
+		})
+		return
+	}
+
 	c.JSON(http.StatusOK, gin.H{
 		"message": "Please check your email and verify your account.",
 		"user":    user,
@@ -81,13 +90,14 @@ func Singin(c *gin.Context) {
 
 }
 
-func SendVerificationEmail(email string, verificationCode string) error {
+func SendVerificationEmail(email string, name string, token string) error {
+	emailData := make(map[string]string)
+	emailData["Name"] = name
+	emailData["Url"] = "http://127.0.0.1:8080/verify?q=" + token
 	emails := []string{email}
 	//TODO: add a msg and subject to msg config file
-	msg := "3nd email confirmation test"
-	subject := "Golang Verification Email from Dev"
-	message := "Subject: " + subject + "\n" + msg
+	subject := "Golang Verification Email from OpenSTR for: " + name
 
-	return utils.SendMail(emails, subject, message)
+	return utils.SendHTMLTemplateMail(emails, subject, emailData, "email_verification")
 
 }
