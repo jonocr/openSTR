@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"fmt"
 	"log"
 	"net/http"
 	"server/database"
@@ -47,6 +48,7 @@ func Singup(c *gin.Context) {
 
 	user := models.User{Email: user.Email, Password: string(hash), Name: user.Name, LastName: user.LastName, IsVerified: false}
 
+	// Save user info in DB
 	result := database.DB.Create(&user)
 
 	if result.Error != nil {
@@ -62,6 +64,7 @@ func Singup(c *gin.Context) {
 		UserId: user.Id,
 	}
 
+	// Save Token in DB
 	verificationResult := database.DB.Create(&tokenObj)
 
 	if verificationResult.Error != nil {
@@ -71,6 +74,7 @@ func Singup(c *gin.Context) {
 		return
 	}
 
+	// Send Email
 	if err := SendVerificationEmail(user.Email, user.Name, token); err != nil {
 		log.Println(err.Error())
 		c.JSON(http.StatusBadRequest, gin.H{
@@ -100,4 +104,51 @@ func SendVerificationEmail(email string, name string, token string) error {
 
 	return utils.SendHTMLTemplateMail(emails, subject, emailData, "email_verification")
 
+}
+
+func VerifyEmail(c *gin.Context) {
+	var token models.UserToken
+	// var user models.User
+	tokenId := c.Query("q")
+
+	fmt.Printf("token: %v", tokenId)
+
+	if len(tokenId) < 128 {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"message": "Invalid token. Please request a new token verification email.",
+		})
+		return
+	}
+
+	tokenResult := database.DB.Where("token = ?", tokenId).First(&token)
+
+	if tokenResult.Error != nil || tokenResult.RowsAffected == 0 {
+		log.Fatal("Invalid Token")
+		c.JSON(http.StatusBadRequest, gin.H{
+			"message": "Invalid token. Please request a new token verification email.",
+		})
+	}
+
+	userResult := database.DB.First(&user, token.UserId)
+
+	if userResult.Error != nil || userResult.RowsAffected == 0 {
+		log.Fatal("User not found")
+		c.JSON(http.StatusBadRequest, gin.H{
+			"message": "Invalid token. You need to singin first.",
+		})
+	}
+
+	token.User.IsVerified = true
+	verifedResult := database.DB.Model(&token.User).Update("is_verified", token.User.IsVerified)
+
+	if verifedResult.Error != nil || verifedResult.RowsAffected == 0 {
+		log.Fatal("User couldn't be verified.")
+		c.JSON(http.StatusBadRequest, gin.H{
+			"message": "Error happened and user cann't be verified",
+		})
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message": "Thanks, your email has been verified. Please login into your account.",
+	})
 }

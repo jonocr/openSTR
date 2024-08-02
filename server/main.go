@@ -37,17 +37,19 @@ func main() {
 
 	router := gin.Default()
 	router.POST("/singup", controllers.Singup)
+	router.GET("/verify", controllers.VerifyEmail)
+	router.GET("/email", sendEmail)
+
 	router.GET("/albums", getAlbums)
 	router.GET("/users", getUsers)
 	router.POST("/albums", postAlbums)
-	router.GET("/email", sendEmail)
 
 	router.Run("localhost:8080")
 }
 
 func sendEmail(c *gin.Context) {
 
-	err := controllers.SendVerificationEmail()
+	err := controllers.SendVerificationEmail("jono.calvo@gmail.com", "jono", "kja234sdhfkjlahsdflkjasdhflkajhsdf")
 
 	if err != nil {
 		log.Println(err.Error())
@@ -62,23 +64,7 @@ func sendEmail(c *gin.Context) {
 	})
 }
 
-// getAlbums responds with the list of all albums as JSON.
 func getUsers(c *gin.Context) {
-
-	// connStr := "user=dev dbname=pqgotest sslmode=verify-full"
-	// db, err := sql.Open("postgres", connStr)
-	// if err != nil {
-	// 	log.Fatal(err)
-	// }
-	// age := 21
-	// rows, err := database.Db.Query("SELECT name FROM users WHERE age = $1", age)
-	// if err != nil {
-	// 	fmt.Println(err)
-	// 	c.AbortWithStatusJSON(400, "Couldn't create the new user.")
-	// } else {
-	// 	c.IndentedJSON(http.StatusOK, rows)
-	// 	// ctx.JSON(http.StatusOK, "User is successfully created.")
-	// }
 }
 
 // getAlbums responds with the list of all albums as JSON.
