@@ -1,19 +1,23 @@
 package database
 
 import (
-	"database/sql"
 	"fmt"
 	"os"
 	"strconv"
 
 	"github.com/joho/godotenv"
 	_ "github.com/lib/pq" // don't forget to add it. It doesn't be added automatically
+	"gorm.io/driver/postgres"
+	"gorm.io/gorm"
 )
 
-var Db *sql.DB //created outside to make it global.
+// var Db *sql.DB //created outside to make it global.
+
+var DB *gorm.DB
 
 // make sure your function start with uppercase to call outside of the directory.
 func ConnectDatabase() {
+	var errSql error
 
 	err := godotenv.Load() //by default, it is .env so we don't have to write
 	if err != nil {
@@ -29,12 +33,15 @@ func ConnectDatabase() {
 	// set up postgres sql to open it.
 	psqlSetup := fmt.Sprintf("host=%s port=%d user=%s dbname=%s password=%s sslmode=disable",
 		host, port, user, dbname, pass)
-	db, errSql := sql.Open("postgres", psqlSetup)
+	// db, errSql := sql.Open("postgres", psqlSetup)
+
+	DB, errSql = gorm.Open(postgres.Open(psqlSetup), &gorm.Config{})
+
 	if errSql != nil {
-		fmt.Println("There is an error while connecting to the database ", err)
+		fmt.Println("There is an error while connecting to the database ", errSql)
 		panic(err)
 	} else {
-		Db = db
+		// Db = db
 		fmt.Println("Successfully connected to database!")
 	}
 }

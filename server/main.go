@@ -2,7 +2,9 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"net/http"
+	"server/controllers"
 	"server/database"
 
 	"github.com/gin-gonic/gin"
@@ -25,10 +27,19 @@ var albums = []album{
 	{ID: "3", Title: "Sarah Vaughan and Clifford Brown", Artist: "Sarah Vaughan", Price: 39.99},
 }
 
+func init() {
+	fmt.Println("This will get called on main initialization")
+	database.ConnectDatabase()
+	database.SyncDatabase()
+}
+
 func main() {
 
 	router := gin.Default()
-	database.ConnectDatabase()
+	router.POST("/singup", controllers.Singup)
+	router.GET("/verify", controllers.VerifyEmail)
+	router.GET("/email", sendEmail)
+
 	router.GET("/albums", getAlbums)
 	router.GET("/users", getUsers)
 	router.POST("/albums", postAlbums)
@@ -36,23 +47,24 @@ func main() {
 	router.Run("localhost:8080")
 }
 
-// getAlbums responds with the list of all albums as JSON.
-func getUsers(c *gin.Context) {
+func sendEmail(c *gin.Context) {
 
-	// connStr := "user=dev dbname=pqgotest sslmode=verify-full"
-	// db, err := sql.Open("postgres", connStr)
-	// if err != nil {
-	// 	log.Fatal(err)
-	// }
-	age := 21
-	rows, err := database.Db.Query("SELECT name FROM users WHERE age = $1", age)
+	err := controllers.SendVerificationEmail("jono.calvo@gmail.com", "jono", "kja234sdhfkjlahsdflkjasdhflkajhsdf")
+
 	if err != nil {
-		fmt.Println(err)
-		c.AbortWithStatusJSON(400, "Couldn't create the new user.")
-	} else {
-		c.IndentedJSON(http.StatusOK, rows)
-		// ctx.JSON(http.StatusOK, "User is successfully created.")
+		log.Println(err.Error())
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "Failed to send verification email.",
+		})
+		return
 	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message": "Email sent",
+	})
+}
+
+func getUsers(c *gin.Context) {
 }
 
 // getAlbums responds with the list of all albums as JSON.
