@@ -4,11 +4,17 @@ import (
 	"bytes"
 	"crypto/rand"
 	"encoding/hex"
+	"fmt"
 	"log"
 	"net/smtp"
 	"os"
 	"text/template"
+	"time"
+
+	"github.com/golang-jwt/jwt/v5"
 )
+
+var secretKey = []byte("secret-key")
 
 func SendMail(to []string, subject string, body string) error {
 	auth := smtp.PlainAuth(
@@ -72,4 +78,23 @@ func GenerateRandomHex(n int) (string, error) {
 		return "", err
 	}
 	return hex.EncodeToString(bytes), nil
+}
+
+func CreateToken(username string) (string, error) {
+	secretKey := []byte(os.Getenv("JWT_SECRET_KEY"))
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256,
+		jwt.MapClaims{
+			"username": username,
+			"exp":      time.Now().Add(time.Minute * 2).Unix(),
+		})
+	fmt.Printf(Blue+"Secret: %+v \n"+Reset, secretKey)
+	fmt.Printf(Yellow+"Token: %+v \n"+Reset, token)
+
+	tokenString, err := token.SignedString(secretKey)
+	if err != nil {
+		fmt.Printf(Red+"Error from SignedString: %+v \n"+Reset, err.Error())
+		return "", err
+	}
+
+	return tokenString, nil
 }

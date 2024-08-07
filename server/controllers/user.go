@@ -91,6 +91,46 @@ func Singup(c *gin.Context) {
 }
 
 func Singin(c *gin.Context) {
+	var singin struct {
+		Email    string `json:"email"`
+		Password string `json:"password"`
+	}
+
+	var user models.User
+
+	if c.BindJSON(&singin) != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "Fail to read body",
+		})
+		return
+	}
+	fmt.Printf(utils.Green+"resquest params: %+v"+utils.Reset, singin)
+	database.DB.Where("email = ?", singin.Email).First(&user)
+
+	err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(singin.Password))
+
+	if err != nil {
+		log.Println(err)
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "Invalid Credentials",
+		})
+		return
+	}
+
+	token, err := utils.CreateToken(user.Email)
+
+	if err != nil {
+		log.Println(err)
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "Error creating session token",
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message": "Successful login",
+		"user":    token, // Add JWT
+	})
 
 }
 
@@ -108,10 +148,8 @@ func SendVerificationEmail(email string, name string, token string) error {
 
 func VerifyEmail(c *gin.Context) {
 	var token models.UserToken
-	// var user models.User
+	var user models.User
 	tokenId := c.Query("q")
-
-	fmt.Printf("token: %v", tokenId)
 
 	if len(tokenId) < 128 {
 		c.JSON(http.StatusBadRequest, gin.H{
@@ -138,8 +176,7 @@ func VerifyEmail(c *gin.Context) {
 		})
 	}
 
-	token.User.IsVerified = true
-	verifedResult := database.DB.Model(&token.User).Update("is_verified", token.User.IsVerified)
+	verifedResult := database.DB.Model(&user).Update("is_verified", true)
 
 	if verifedResult.Error != nil || verifedResult.RowsAffected == 0 {
 		log.Fatal("User couldn't be verified.")

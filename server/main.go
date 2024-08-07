@@ -37,6 +37,7 @@ func main() {
 
 	router := gin.Default()
 	router.POST("/singup", controllers.Singup)
+	router.POST("/singin", controllers.Singin)
 	router.GET("/verify", controllers.VerifyEmail)
 	router.GET("/email", sendEmail)
 
